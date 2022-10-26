@@ -16,18 +16,18 @@ class TrendingRepositoryImpl(
     private val context: Context
 ) : ITrendingRepository {
 
-    override suspend fun getTrendingRepositories(forceRefresh: Boolean): List<Repo> {
+    override suspend fun getTrendingRepositories(forceRefresh: Boolean , page : Int): List<Repo> {
         return try {
             val (lastRefresh, repos) = dao.getAllTrendingRepos()
 
             if (shouldFetchFromRemote(forceRefresh, lastRefresh, repos)) {
-                fetchRepoFromApi(repos)
+                fetchRepoFromApi(repos , page)
             } else {
                 repos
             }
 
         } catch (e: Exception) {
-            fetchRepoFromApi(emptyList())
+            fetchRepoFromApi(emptyList() , 0)
         }
 
     }
@@ -41,14 +41,15 @@ class TrendingRepositoryImpl(
                 || repos.isNullOrEmpty()
                 || forceRefresh
 
-    private suspend fun fetchRepoFromApi(repos: List<Repo>): List<Repo> {
+    private suspend fun fetchRepoFromApi(repos: List<Repo> , page : Int): List<Repo> {
 
         if (context.isNetworkAvailable() == false) {
             return repos
         }
 
         return try {
-            val trendingRepositories = api.getTrendingRepositories("daily")
+            val trendingRepositories = api.getTrendingRepositories().items
+
 
             if (trendingRepositories.isNullOrEmpty()) {
                 repos

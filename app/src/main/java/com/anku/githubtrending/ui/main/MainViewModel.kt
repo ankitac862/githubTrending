@@ -14,14 +14,45 @@ class MainViewModel( private val repository: ITrendingRepository)
     : ViewModel() {
     val trendingLiveData: MutableLiveData<Resource<List<Repo>>> = MutableLiveData()
 
-    fun requestTrendingRepositories(forceRefresh: Boolean = false) {
+    fun requestTrendingRepositories(forceRefresh: Boolean = false , page :Int) {
         viewModelScope.launch {
             trendingLiveData.value = Resource.Loading()
-            val trendingRepositories = repository.getTrendingRepositories(forceRefresh)
+            val trendingRepositories = repository.getTrendingRepositories(forceRefresh , page)
             if (trendingRepositories.isNullOrEmpty()) {
                 trendingLiveData.value = Resource.Error("List is null or empty")
             } else {
                 trendingLiveData.value = Resource.Success(trendingRepositories)
+            }
+
+        }
+    }
+
+
+    fun searchLocal(userName: String){
+        viewModelScope.launch {
+            if(userName.isNotEmpty()) {
+                if (!trendingLiveData.value?.data.isNullOrEmpty()){
+                    val trendingRepositories = trendingLiveData.value?.data?.filter {
+                        it.name.contains(
+                            userName,
+                            true
+                        )
+                    }
+                    if (trendingRepositories.isNullOrEmpty()) {
+                        trendingLiveData.value = Resource.Error("List is null or empty" ,trendingLiveData.value?.data)
+                    } else {
+                        trendingLiveData.value = Resource.Success(trendingRepositories)
+                    }
+
+                }
+            }else{
+                trendingLiveData.value = Resource.Loading()
+                val trendingRepositories = repository.getTrendingRepositories(false , 0)
+                if (trendingRepositories.isNullOrEmpty()) {
+                    trendingLiveData.value = Resource.Error("List is null or empty" ,trendingLiveData.value?.data)
+                } else {
+                    trendingLiveData.value = Resource.Success(trendingRepositories)
+                }
             }
 
         }

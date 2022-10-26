@@ -5,14 +5,17 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AbsListView
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 
 import com.anku.githubtrending.R
 import com.anku.githubtrending.databinding.FragmentMainBinding
@@ -30,6 +33,10 @@ class MainFragment : Fragment() {
     private lateinit var binding: FragmentMainBinding
     private val adapter by lazy { ReposAdapter(requireContext()) }
     private val viewModel by sharedViewModel<MainViewModel>()
+    val page :Int = 0
+    var pageNum = 1
+    var total = 0
+    var isLoading = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -47,6 +54,7 @@ class MainFragment : Fragment() {
         handleRetryButtonAction()
         observeLiveData()
         fetchRepos()
+        searchUsername()
     }
 
     private fun initTrendingView() {
@@ -61,12 +69,13 @@ class MainFragment : Fragment() {
                 (binding.recycler.layoutManager as LinearLayoutManager).orientation
             )
         )
+
     }
 
     private fun handlePullToRefreshAction() {
         binding.swipeRefresh.setOnRefreshListener {
             showShimmerLoading()
-            fetchRepos(true)
+            fetchRepos(true , 0)
         }
     }
 
@@ -76,9 +85,9 @@ class MainFragment : Fragment() {
         }
     }
 
-    private fun fetchRepos(forceRefresh: Boolean = false) {
+    private fun fetchRepos(forceRefresh: Boolean = false , page : Int = 0) {
         viewModel
-            .requestTrendingRepositories(forceRefresh)
+            .requestTrendingRepositories(forceRefresh , page)
     }
 
     private fun observeLiveData() {
@@ -91,6 +100,9 @@ class MainFragment : Fragment() {
                         binding.errorLayout.layout.visibility = View.GONE
                         binding.recycler.visibility = View.VISIBLE
                         adapter.repositories = it.data as ArrayList<Repo>
+                        if  (adapter.repositories.size > 0){
+                            binding.searchView.visibility = View.VISIBLE
+                        }
                         adapter.notifyDataSetChanged()
                     }
                     is Resource.Loading -> {
@@ -99,12 +111,24 @@ class MainFragment : Fragment() {
                         binding.recycler.visibility = View.VISIBLE
                     }
                     is Resource.Error -> {
-                        hideShimmerLoading()
-                        binding.recycler.visibility = View.GONE
-                        binding.swipeRefresh.visibility = View.GONE
-                        binding.errorLayout.layout.visibility = View.VISIBLE
+                         if (it.data != null ){
+                             hideShimmerLoading()
+                             binding.swipeRefresh.visibility = View.VISIBLE
+                             binding.errorLayout.layout.visibility = View.GONE
+                             binding.recycler.visibility = View.VISIBLE
+                             adapter.repositories = it.data as ArrayList<Repo>
+                             if  (adapter.repositories.size > 0){
+                                 binding.searchView.visibility = View.VISIBLE
+                             }
+                             adapter.notifyDataSetChanged()
+                         }else {
+                             hideShimmerLoading()
+                             binding.recycler.visibility = View.GONE
+                             binding.swipeRefresh.visibility = View.GONE
+                             binding.errorLayout.layout.visibility = View.VISIBLE
+                             binding.searchView.visibility = View.GONE
 
-
+                         }
                     }
                 }
 
@@ -123,4 +147,16 @@ class MainFragment : Fragment() {
     }
 
 
+    private fun searchUsername(){
+        binding.searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener{
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                return false
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                newText?.let { viewModel.searchLocal(it) }
+                return false
+            }
+        })
+    }
 }

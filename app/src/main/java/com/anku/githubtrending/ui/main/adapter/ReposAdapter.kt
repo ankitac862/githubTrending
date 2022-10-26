@@ -50,28 +50,28 @@ class ReposAdapter(private val context: Context) :
             binding.apply {
 
                 Glide.with(itemView)
-                    .load(repo.builtBy?.get(0)?.avatar)
+                    .load(repo.owner?.avatar_url)
                     .centerCrop()
                     .error(android.R.drawable.stat_notify_error)
                     .into(avatar)
 
-                val str = SpannableString(repo.username)
+                val str = SpannableString(repo.name)
                 str.setSpan(
                     StyleSpan(Typeface.BOLD),
-                    repo.username.length,
+                    repo.name.length,
                     str.length,
                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
                 )
                 name.text = str
                 description.text = repo.description
                 language.text = repo.language
-                star.text = repo.starsSince.toString()
+                star.text = repo.stars.toString()
 
                 if(repo.checked)
                  selectedImage.setImageResource(R.drawable.ic_baseline_check_circle)
                 else selectedImage.setImageResource(0)
 
-                ViewCompat.setTransitionName(this.avatar, "avatar_${repo.username}")
+                ViewCompat.setTransitionName(this.avatar, "avatar_${repo.name}")
             }
 
         }
