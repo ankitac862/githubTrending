@@ -23,6 +23,10 @@ Provides Swipe to Refresh that force  to refreshes repositories from API in case
 
 if user click on item it's position is maintained
 
+#### Phase 2
+
+Search repositories by username
+
 ### Architecture Used
 
 MVVM with LiveData
